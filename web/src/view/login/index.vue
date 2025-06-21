@@ -1,12 +1,15 @@
+vue
 <template>
   <div id="userLayout" class="w-full h-full relative">
     <div
-      class="rounded-lg flex items-center justify-evenly w-full h-full md:w-screen md:h-screen md:bg-[#194bfb] bg-white"
+      class="rounded-lg flex items-center justify-evenly w-full h-full md:w-screen md:h-screen bg-white bg-white"
+
     >
-      <div class="md:w-3/5 w-10/12 h-full flex items-center justify-evenly">
-        <div
+      <!-- 交换后右侧的登录表单区域 -->
+      <div class="md:w-3/5 w-10/12 h-full flex items-center justify-evenly md:order-2">
+<!--        <div
           class="oblique h-[130%] w-3/5 bg-white dark:bg-slate-900 transform -rotate-12 absolute -ml-52"
-        />
+        />-->
         <!-- 分割斜块 -->
         <div
           class="z-[999] pt-12 pb-10 md:w-96 w-full rounded-lg flex flex-col justify-between box-border"
@@ -17,11 +20,12 @@
             </div>
             <div class="mb-9">
               <p class="text-center text-4xl font-bold">
-                {{ $GIN_VUE_ADMIN.appName }}
+                登录
+<!--                {{ $GIN_VUE_ADMIN.appName }}-->
               </p>
-              <p class="text-center text-sm font-normal text-gray-500 mt-2.5">
+<!--              <p class="text-center text-sm font-normal text-gray-500 mt-2.5">
                 A management platform using Golang and Vue
-              </p>
+              </p>-->
             </div>
             <el-form
               ref="loginForm"
@@ -76,26 +80,19 @@
                   type="primary"
                   size="large"
                   @click="submitForm"
-                  >登 录</el-button
+                >登 录</el-button
                 >
               </el-form-item>
-              <el-form-item class="mb-6">
-                <el-button
-                  class="shadow shadow-active h-11 w-full"
-                  type="primary"
-                  size="large"
-                  @click="checkInit"
-                  >前往初始化</el-button
-                >
-              </el-form-item>
+
             </el-form>
           </div>
         </div>
       </div>
-      <div class="hidden md:block w-1/2 h-full float-right bg-[#194bfb]">
+      <!-- 交换后左侧的图片展示区域 -->
+      <div class="hidden md:block w-1/2 h-full float-left bg-[#194bfb] md:order-1">
         <img
           class="h-full"
-          src="@/assets/login_right_banner.jpg"
+          src="@/assets/equipment.png"
           alt="banner"
         />
       </div>
@@ -124,8 +121,9 @@
 </template>
 
 <script setup>
+  // 此处JS代码无需修改，仅需修改模板部分
   import { captcha } from '@/api/user'
-  import { checkDB } from '@/api/initdb'
+
   import BottomInfo from '@/components/bottomInfo/bottomInfo.vue'
   import { reactive, ref } from 'vue'
   import { ElMessage } from 'element-plus'
@@ -135,7 +133,7 @@
   defineOptions({
     name: 'Login'
   })
-
+  // eslint-disable-next-line no-unused-vars
   const router = useRouter()
   // 验证函数
   const checkUsername = (rule, value, callback) => {
@@ -220,19 +218,19 @@
     })
   }
 
-  // 跳转初始化
-  const checkInit = async () => {
-    const res = await checkDB()
-    if (res.code === 0) {
-      if (res.data?.needInit) {
-        userStore.NeedInit()
-        await router.push({ name: 'Init' })
-      } else {
-        ElMessage({
-          type: 'info',
-          message: '已配置数据库信息，无法初始化'
-        })
-      }
-    }
-  }
+  /* // 跳转初始化
+   const checkInit = async () => {
+     const res = await checkDB()
+     if (res.code === 0) {
+       if (res.data?.needInit) {
+         userStore.NeedInit()
+         await router.push({ name: 'Init' })
+       } else {
+         ElMessage({
+           type: 'info',
+           message: '已配置数据库信息，无法初始化'
+         })
+       }
+     }
+   }*/
 </script>
