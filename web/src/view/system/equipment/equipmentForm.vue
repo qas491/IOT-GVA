@@ -19,7 +19,7 @@
 </el-form-item>
         <el-form-item label="运行状态:" prop="nunningState">
     <el-select v-model="formData.nunningState" placeholder="请选择运行状态" style="width:100%" filterable :clearable="true">
-        <el-option v-for="(item,key) in runningstate Options" :key="key" :label="item.label" :value="item.value" />
+        <el-option v-for="(item,key) in runningstateOptions" :key="key" :label="item.label" :value="item.value" />
     </el-select>
 </el-form-item>
         <el-form-item label="激活状态:" prop="sctiveState">
@@ -68,7 +68,7 @@ const btnLoading = ref(false)
 
 const type = ref('')
 const OperationalstatusOptions = ref([])
-const runningstate Options = ref([])
+const runningstateOptions = ref([])
 const activestateOptions = ref([])
 const formData = ref({
             equipmentNumber: '',
@@ -119,7 +119,7 @@ const init = async () => {
       type.value = 'create'
     }
     OperationalstatusOptions.value = await getDictFunc('Operationalstatus')
-    runningstate Options.value = await getDictFunc('runningstate ')
+    runningstateOptions.value = await getDictFunc('runningstate ')
     activestateOptions.value = await getDictFunc('activestate')
 }
 

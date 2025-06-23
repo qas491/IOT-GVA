@@ -1,10 +1,10 @@
 import service from '@/utils/request'
 // @Tags Equipment
-// @Summary 创建设备信息
+// @Summary 创建全部设备
 // @Security ApiKeyAuth
 // @Accept application/json
 // @Produce application/json
-// @Param data body model.Equipment true "创建设备信息"
+// @Param data body model.Equipment true "创建全部设备"
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"创建成功"}"
 // @Router /EQ/createEquipment [post]
 export const createEquipment = (data) => {
@@ -16,11 +16,11 @@ export const createEquipment = (data) => {
 }
 
 // @Tags Equipment
-// @Summary 删除设备信息
+// @Summary 删除全部设备
 // @Security ApiKeyAuth
 // @Accept application/json
 // @Produce application/json
-// @Param data body model.Equipment true "删除设备信息"
+// @Param data body model.Equipment true "删除全部设备"
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"删除成功"}"
 // @Router /EQ/deleteEquipment [delete]
 export const deleteEquipment = (params) => {
@@ -32,11 +32,11 @@ export const deleteEquipment = (params) => {
 }
 
 // @Tags Equipment
-// @Summary 批量删除设备信息
+// @Summary 批量删除全部设备
 // @Security ApiKeyAuth
 // @Accept application/json
 // @Produce application/json
-// @Param data body request.IdsReq true "批量删除设备信息"
+// @Param data body request.IdsReq true "批量删除全部设备"
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"删除成功"}"
 // @Router /EQ/deleteEquipment [delete]
 export const deleteEquipmentByIds = (params) => {
@@ -48,11 +48,11 @@ export const deleteEquipmentByIds = (params) => {
 }
 
 // @Tags Equipment
-// @Summary 更新设备信息
+// @Summary 更新全部设备
 // @Security ApiKeyAuth
 // @Accept application/json
 // @Produce application/json
-// @Param data body model.Equipment true "更新设备信息"
+// @Param data body model.Equipment true "更新全部设备"
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"更新成功"}"
 // @Router /EQ/updateEquipment [put]
 export const updateEquipment = (data) => {
@@ -64,11 +64,11 @@ export const updateEquipment = (data) => {
 }
 
 // @Tags Equipment
-// @Summary 用id查询设备信息
+// @Summary 用id查询全部设备
 // @Security ApiKeyAuth
 // @Accept application/json
 // @Produce application/json
-// @Param data query model.Equipment true "用id查询设备信息"
+// @Param data query model.Equipment true "用id查询全部设备"
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"查询成功"}"
 // @Router /EQ/findEquipment [get]
 export const findEquipment = (params) => {
@@ -80,11 +80,11 @@ export const findEquipment = (params) => {
 }
 
 // @Tags Equipment
-// @Summary 分页获取设备信息列表
+// @Summary 分页获取全部设备列表
 // @Security ApiKeyAuth
 // @Accept application/json
 // @Produce application/json
-// @Param data query request.PageInfo true "分页获取设备信息列表"
+// @Param data query request.PageInfo true "分页获取全部设备列表"
 // @Success 200 {string} string "{"success":true,"data":{},"msg":"获取成功"}"
 // @Router /EQ/getEquipmentList [get]
 export const getEquipmentList = (params) => {
@@ -96,15 +96,41 @@ export const getEquipmentList = (params) => {
 }
 
 // @Tags Equipment
-// @Summary 不需要鉴权的设备信息接口
+// @Summary 不需要鉴权的全部设备接口
 // @Accept application/json
 // @Produce application/json
-// @Param data query systemReq.EquipmentSearch true "分页获取设备信息列表"
+// @Param data query systemReq.EquipmentSearch true "分页获取全部设备列表"
 // @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
 // @Router /EQ/getEquipmentPublic [get]
 export const getEquipmentPublic = () => {
   return service({
     url: '/EQ/getEquipmentPublic',
     method: 'get',
+  })
+}
+// Dashboard 仪表盘
+// @Tags Equipment
+// @Summary 仪表盘
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} response.Response{data=object,msg=string} "成功"
+// @Router /EQ/Dashboard [GET]
+export const Dashboard = () => {
+  return service({
+    url: '/EQ/Dashboard',
+    method: 'GET'
+  })
+}
+// FillFuncName 
+// @Tags Equipment
+// @Summary Get total equipments data and equipments model, and display available equipments based on operational status, as well as generate a circular diagram based on operational status
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} response.Response{data=object,msg=string} "Success"
+// @Router /eq/total-equipments [GET]
+export const getTotalEquipment = () => {
+  return service({
+    url: "/eq/total-equipment",
+    method: "GET"
   })
 }
