@@ -23,6 +23,7 @@ type ApiGroup struct {
 	AutoCodeTemplateApi
 	SysParamsApi
 	EquipmentApi
+	ProjectInfoApi
 }
 
 var (
@@ -46,4 +47,5 @@ var (
 	autoCodeHistoryService  = service.ServiceGroupApp.SystemServiceGroup.AutoCodeHistory
 	autoCodeTemplateService = service.ServiceGroupApp.SystemServiceGroup.AutoCodeTemplate
 	EQService               = service.ServiceGroupApp.SystemServiceGroup.EquipmentService
+	PIService               = service.ServiceGroupApp.SystemServiceGroup.ProjectInfoService
 )

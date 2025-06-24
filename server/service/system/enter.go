@@ -22,4 +22,5 @@ type ServiceGroup struct {
 	AutoCodeHistory  autoCodeHistory
 	AutoCodeTemplate autoCodeTemplate
 	EquipmentService
+	ProjectInfoService
 }
