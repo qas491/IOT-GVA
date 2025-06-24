@@ -99,29 +99,47 @@
   import * as echarts from 'echarts'
   import axios from 'axios'
 
-  // 设备情况数据
+ //import { devicecount, queryDeviceCountByStatus } from '@/api/system/equipment' // 引入 API 请求函数
+  /*// 设备情况数据
+  // 调用 devicecount API 获取全部设备数量
+  const deviceCountRes = await devicecount()
+  if (deviceCountRes.code === 0) {
+    deviceStats.value.total = deviceCountRes.data // 更新总设备数
+  }
+  // 调用 queryDeviceCountByStatus API 获取设备状态统计数据
+  const statusCountRes = await queryDeviceCountByStatus()
+  if (statusCountRes.code === 0) {
+    deviceStats.value.inUse = statusCountRes.data.inUse
+    deviceStats.value.idle = statusCountRes.data.idle
+    deviceStats.value.stopped = statusCountRes.data.stopped
+    activationStats.value.activated = statusCountRes.data.activated
+    activationStats.value.unactivated = statusCountRes.data.unactivated
+    runningStats.value.normal = statusCountRes.data.normal
+    runningStats.value.fault = statusCountRes.data.fault
+  }*/
+
   const deviceStats = ref({
-    total: 276,
-    inUse: 260,
-    idle: 10,
-    stopped: 6
+    total: 0,
+    inUse: 0,
+    idle: 0,
+    stopped: 0
   })
   // 激活情况数据
   const activationStats = ref({
-    activated: 212,
-    unactivated: 48
+    activated: 0,
+    unactivated: 0
   })
   // 运行状态数据
   const runningStats = ref({
-    normal: 208,
-    fault: 4
+    normal: 0,
+    fault: 0
   })
   // 待办事项数据
   const todoItems = ref({
-    activate: 2,
+    activate: 0,
     install: 0,
     model: 0,
-    location: 1
+    location: 0
   })
   // 在用设备排行数据
   const rankingData = ref([

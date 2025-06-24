@@ -102,12 +102,7 @@ export const getEquipmentList = (params) => {
 // @Param data query systemReq.EquipmentSearch true "分页获取全部设备列表"
 // @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
 // @Router /EQ/getEquipmentPublic [get]
-export const getEquipmentPublic = () => {
-  return service({
-    url: '/EQ/getEquipmentPublic',
-    method: 'get',
-  })
-}
+
 // Dashboard 仪表盘
 // @Tags Equipment
 // @Summary 仪表盘
@@ -121,19 +116,7 @@ export const Dashboard = () => {
     method: 'GET'
   })
 }
-// FillFuncName 
-// @Tags Equipment
-// @Summary Get total equipments data and equipments model, and display available equipments based on operational status, as well as generate a circular diagram based on operational status
-// @Accept application/json
-// @Produce application/json
-// @Success 200 {object} response.Response{data=object,msg=string} "Success"
-// @Router /eq/total-equipments [GET]
-export const getTotalEquipment = () => {
-  return service({
-    url: "/eq/total-equipment",
-    method: "GET"
-  })
-}
+
 // QueryDeviceCount 查询后端设备数量
 // @Tags Equipment
 // @Summary 查询后端设备数量
