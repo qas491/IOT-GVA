@@ -2,6 +2,7 @@ package global
 
 import (
 	"fmt"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/mark3labs/mcp-go/server"
 	"sync"
 
@@ -32,13 +33,14 @@ var (
 	GVA_VP        *viper.Viper
 	// GVA_LOG    *oplogging.Logger
 	GVA_LOG                 *zap.Logger
-	GVA_Timer               timer.Timer = timer.NewTimerTask()
-	GVA_Concurrency_Control             = &singleflight.Group{}
+	GVA_Timer               = timer.NewTimerTask()
+	GVA_Concurrency_Control = &singleflight.Group{}
 	GVA_ROUTERS             gin.RoutesInfo
 	GVA_ACTIVE_DBNAME       *string
 	GVA_MCP_SERVER          *server.MCPServer
 	BlackCache              local_cache.Cache
 	lock                    sync.RWMutex
+	GVA_MQTT_CLIENT         mqtt.Client
 )
 
 // GetGlobalDBByDBName 通过名称获取db list中的db

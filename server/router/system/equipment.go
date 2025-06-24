@@ -5,24 +5,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type EquipmentRouter struct {}
+type EquipmentRouter struct{}
 
-// InitEquipmentRouter 初始化 设备信息 路由信息
-func (s *EquipmentRouter) InitEquipmentRouter(Router *gin.RouterGroup,PublicRouter *gin.RouterGroup) {
+func (s *EquipmentRouter) InitEquipmentRouter(Router *gin.RouterGroup, PublicRouter *gin.RouterGroup) {
 	EQRouter := Router.Group("EQ").Use(middleware.OperationRecord())
 	EQRouterWithoutRecord := Router.Group("EQ")
 	EQRouterWithoutAuth := PublicRouter.Group("EQ")
 	{
-		EQRouter.POST("createEquipment", EQApi.CreateEquipment)   // 新建设备信息
-		EQRouter.DELETE("deleteEquipment", EQApi.DeleteEquipment) // 删除设备信息
-		EQRouter.DELETE("deleteEquipmentByIds", EQApi.DeleteEquipmentByIds) // 批量删除设备信息
-		EQRouter.PUT("updateEquipment", EQApi.UpdateEquipment)    // 更新设备信息
+		EQRouter.POST(":deviceID/updateStatus", EQApi.UpdateEquipmentStatus)
+		EQRouter.POST("createEquipment", EQApi.CreateEquipment)
+		EQRouter.DELETE("deleteEquipment", EQApi.DeleteEquipment)
+		EQRouter.DELETE("deleteEquipmentByIds", EQApi.DeleteEquipmentByIds)
+		EQRouter.PUT("updateEquipment", EQApi.UpdateEquipment)
 	}
 	{
-		EQRouterWithoutRecord.GET("findEquipment", EQApi.FindEquipment)        // 根据ID获取设备信息
-		EQRouterWithoutRecord.GET("getEquipmentList", EQApi.GetEquipmentList)  // 获取设备信息列表
+
+		EQRouterWithoutRecord.GET("findEquipment", EQApi.FindEquipment)
+		EQRouterWithoutRecord.GET("getEquipmentList", EQApi.GetEquipmentList)
+		EQRouterWithoutAuth.GET("getEquipmentPublic", EQApi.GetEquipmentPublic)
 	}
 	{
-	    EQRouterWithoutAuth.GET("getEquipmentPublic", EQApi.GetEquipmentPublic)  // 设备信息开放接口
+		//		EQRouterWithoutAuth.GET("getEquipmentPublic", EQApi.GetEquipmentPublic)
+		EQRouterWithoutAuth.GET("devicecount", EQApi.QueryDeviceCount)
+		EQRouterWithoutAuth.GET("queryDeviceCountByStatus ", EQApi.QueryDeviceCountByStatus)
 	}
 }

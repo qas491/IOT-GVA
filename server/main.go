@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/flipped-aurora/gin-vue-admin/server/api/v1/system"
 	"github.com/flipped-aurora/gin-vue-admin/server/core"
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/initialize"
@@ -48,4 +49,5 @@ func initializeSystem() {
 	if global.GVA_DB != nil {
 		initialize.RegisterTables() // 初始化表
 	}
+	system.InitMQTT()
 }

@@ -134,3 +134,29 @@ export const getTotalEquipment = () => {
     method: "GET"
   })
 }
+// QueryDeviceCount 查询后端设备数量
+// @Tags Equipment
+// @Summary 查询后端设备数量
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} response.Response{data=object,msg=string} "成功"
+// @Router /EQ/devicecount [GET]
+export const devicecount = () => {
+  return service({
+    url: '/EQ/devicecount',
+    method: 'GET'
+  })
+}
+// QueryDeviceCountByStatus  根据运营状态查询设备数量
+// @Tags Equipment
+// @Summary 根据运营状态查询设备数量
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} response.Response{data=object,msg=string} "成功"
+// @Router /EQ/queryDeviceCountByStatus  [GET]
+export const queryDeviceCountByStatus  = () => {
+  return service({
+    url: '/EQ/queryDeviceCountByStatus ',
+    method: 'GET'
+  })
+}
