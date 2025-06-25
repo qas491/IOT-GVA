@@ -58,7 +58,7 @@
         </div>
         <div class="legend">
           <div class="legend-item">
-            <span class="legend-dot" style="background-color: #22c55e;"></span>
+            <span class="legend-dot" style="background-color: #1ae364;"></span>
             <span class="legend-text">在线设备</span>
           </div>
           <div class="legend-item">
