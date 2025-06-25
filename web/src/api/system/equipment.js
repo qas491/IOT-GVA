@@ -110,10 +110,11 @@ export const getEquipmentList = (params) => {
 // @Produce application/json
 // @Success 200 {object} response.Response{data=object,msg=string} "成功"
 // @Router /EQ/Dashboard [GET]
-export const Dashboard = () => {
+export const Dashboard = (params) => {
   return service({
     url: '/EQ/Dashboard',
-    method: 'GET'
+    method: 'GET',
+    params
   })
 }
 
@@ -124,10 +125,11 @@ export const Dashboard = () => {
 // @Produce application/json
 // @Success 200 {object} response.Response{data=object,msg=string} "成功"
 // @Router /EQ/devicecount [GET]
-export const devicecount = () => {
+export const devicecount = (params) => {
   return service({
     url: '/EQ/devicecount',
-    method: 'GET'
+    method: 'GET',
+    params
   })
 }
 // QueryDeviceCountByStatus  根据运营状态查询设备数量
@@ -137,9 +139,10 @@ export const devicecount = () => {
 // @Produce application/json
 // @Success 200 {object} response.Response{data=object,msg=string} "成功"
 // @Router /EQ/queryDeviceCountByStatus  [GET]
-export const queryDeviceCountByStatus  = () => {
+export const queryDeviceCountByStatus  = (params) => {
   return service({
     url: '/EQ/queryDeviceCountByStatus ',
-    method: 'GET'
+    method: 'GET',
+    params
   })
 }

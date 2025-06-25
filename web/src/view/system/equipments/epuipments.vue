@@ -6,10 +6,10 @@
       <div class="device-status">
         <div class="status-card use-stat">
           <h3>使用统计</h3>
-          <div class="status-item">全部设备：{{ deviceStats.total }}台</div>
-          <div class="status-item">在用设备：{{ deviceStats.inUse }}台</div>
-          <div class="status-item">闲置设备：{{ deviceStats.idle }}台</div>
-          <div class="status-item">停用设备：{{ deviceStats.stopped }}台</div>
+          <div class="status-item" :class="{'online':deviceStats.total}">全部设备：{{ deviceStats.total || 0}}台</div>
+          <div class="status-item" :class="{'online':deviceStats.inUse}">在用设备：{{ deviceStats.inUse }}台</div>
+          <div class="status-item" :class="{'online':deviceStats.idle}">闲置设备：{{ deviceStats.idle }}台</div>
+          <div class="status-item" :class="{'online':deviceStats.stopped}"> 停用设备：{{ deviceStats.stopped }}台</div>
         </div>
         <div class="status-card activation-stat">
           <h3>激活情况（在用设备）</h3>
@@ -98,25 +98,9 @@
   import { ref, onMounted, onUnmounted } from 'vue'
   import * as echarts from 'echarts'
   import axios from 'axios'
+ // import { queryDeviceCountByStatus } from '@/api/system/equipment';
 
- //import { devicecount, queryDeviceCountByStatus } from '@/api/system/equipment' // 引入 API 请求函数
-  /*// 设备情况数据
-  // 调用 devicecount API 获取全部设备数量
-  const deviceCountRes = await devicecount()
-  if (deviceCountRes.code === 0) {
-    deviceStats.value.total = deviceCountRes.data // 更新总设备数
-  }
-  // 调用 queryDeviceCountByStatus API 获取设备状态统计数据
-  const statusCountRes = await queryDeviceCountByStatus()
-  if (statusCountRes.code === 0) {
-    deviceStats.value.inUse = statusCountRes.data.inUse
-    deviceStats.value.idle = statusCountRes.data.idle
-    deviceStats.value.stopped = statusCountRes.data.stopped
-    activationStats.value.activated = statusCountRes.data.activated
-    activationStats.value.unactivated = statusCountRes.data.unactivated
-    runningStats.value.normal = statusCountRes.data.normal
-    runningStats.value.fault = statusCountRes.data.fault
-  }*/
+
 
   const deviceStats = ref({
     total: 0,
@@ -124,6 +108,19 @@
     idle: 0,
     stopped: 0
   })
+
+  /*const fetchDeviceStats = async () => {
+    try {
+      const res = await queryDeviceCountByStatus();
+
+      deviceStats.value=res.data;
+    }catch (error) {
+      console.error('获取设备统计数出错',error)
+    }
+  };
+  onMounted(() => {
+    fetchDeviceStats()
+  })*/
   // 激活情况数据
   const activationStats = ref({
     activated: 0,
