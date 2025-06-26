@@ -81,14 +81,26 @@
 <script setup>
   import { onMounted, ref } from 'vue'
   import * as echarts from 'echarts'
+  import { devicecount } from '@/api/system/equipment';
 
   // 模拟数据（实际需对接接口）
   const deviceStats = ref({
-    total: 15360,
-    active: 15325,
-    inactive: 35,
-    online: 15210,
-    offline: 115
+    total: 0,
+    active: 0,
+    inactive: 0,
+    online: 0,
+    offline: 0
+  })
+  const queryDevicecount = async () => {
+    try {
+      const res = await devicecount(deviceStats.value)
+      deviceStats.value=res.data;
+    }catch (error) {
+      console.error("获取设备总数失败",error)
+    }
+  }
+  onMounted( () => {
+    queryDevicecount()
   })
   const msgStats = ref({
     monthTotal: 286360,
