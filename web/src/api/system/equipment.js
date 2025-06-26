@@ -141,7 +141,7 @@ export const devicecount = (params) => {
 // @Router /EQ/queryDeviceCountByStatus  [GET]
 export const queryDeviceCountByStatus  = (params) => {
   return service({
-    url: '/EQ/queryDeviceCountByStatus ',
+    url: '/EQ/queryDeviceCountByStatus',
     method: 'GET',
     params
   })

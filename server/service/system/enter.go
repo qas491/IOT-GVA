@@ -23,4 +23,6 @@ type ServiceGroup struct {
 	AutoCodeTemplate autoCodeTemplate
 	EquipmentService
 	ProjectInfoService
+	PartRecordService
+	ItemInfoService
 }

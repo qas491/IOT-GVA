@@ -7,7 +7,7 @@
         <div class="status-card use-stat">
           <h3>使用统计</h3>
           <div class="status-item" :class="{'online':deviceStats.total}">全部设备：{{ deviceStats.total || 0}}台</div>
-          <div class="status-item" :class="{'online':deviceStats.inUse}">在用设备：{{ deviceStats.inUse }}台</div>
+          <div class="status-item" :class="{'online':deviceStats.inUse}">在用设备：{{ deviceStats.total }}台</div>
           <div class="status-item" :class="{'online':deviceStats.idle}">闲置设备：{{ deviceStats.idle }}台</div>
           <div class="status-item" :class="{'online':deviceStats.stopped}"> 停用设备：{{ deviceStats.stopped }}台</div>
         </div>
@@ -98,7 +98,7 @@
   import { ref, onMounted, onUnmounted } from 'vue'
   import * as echarts from 'echarts'
   import axios from 'axios'
- // import { queryDeviceCountByStatus } from '@/api/system/equipment';
+ import { queryDeviceCountByStatus } from '@/api/system/equipment';
 
 
 
@@ -106,12 +106,13 @@
     total: 0,
     inUse: 0,
     idle: 0,
-    stopped: 0
+    stopped: 0,
+    status: "1",
   })
 
-  /*const fetchDeviceStats = async () => {
+  const fetchDeviceStats = async () => {
     try {
-      const res = await queryDeviceCountByStatus();
+      const res = await queryDeviceCountByStatus(deviceStats.value);
 
       deviceStats.value=res.data;
     }catch (error) {
@@ -120,7 +121,7 @@
   };
   onMounted(() => {
     fetchDeviceStats()
-  })*/
+  })
   // 激活情况数据
   const activationStats = ref({
     activated: 0,

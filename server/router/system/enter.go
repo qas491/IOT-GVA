@@ -21,6 +21,8 @@ type RouterGroup struct {
 	SysParamsRouter
 	EquipmentRouter
 	ProjectInfoRouter
+	PartRecordRouter
+	ItemInfoRouter
 }
 
 var (
@@ -45,4 +47,6 @@ var (
 	exportTemplateApi   = api.ApiGroupApp.SystemApiGroup.SysExportTemplateApi
 	EQApi               = api.ApiGroupApp.SystemApiGroup.EquipmentApi
 	PIApi               = api.ApiGroupApp.SystemApiGroup.ProjectInfoApi
+	PRApi               = api.ApiGroupApp.SystemApiGroup.PartRecordApi
+	IIApi               = api.ApiGroupApp.SystemApiGroup.ItemInfoApi
 )

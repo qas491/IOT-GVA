@@ -27,6 +27,6 @@ func (s *EquipmentRouter) InitEquipmentRouter(Router *gin.RouterGroup, PublicRou
 	{
 		//		EQRouterWithoutAuth.GET("getEquipmentPublic", EQApi.GetEquipmentPublic)
 		EQRouterWithoutAuth.GET("devicecount", EQApi.QueryDeviceCount)
-		EQRouterWithoutAuth.GET("queryDeviceCountByStatus ", EQApi.QueryDeviceCountByStatus)
+		EQRouterWithoutAuth.GET("queryDeviceCountByStatus", EQApi.QueryDeviceCountByStatus)
 	}
 }
