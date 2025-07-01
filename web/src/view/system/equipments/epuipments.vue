@@ -1,5 +1,18 @@
 <template>
   <div class="dashboard-container">
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-overlay">
+      <el-loading-spinner></el-loading-spinner>
+      <p>正在加载数据...</p>
+    </div>
+
+    <!-- 错误提示 -->
+    <div v-if="error" class="error-banner">
+      <i class="el-icon-warning"></i>
+      {{ error }}
+      <el-button type="text" @click="fetchDashboardData">重试</el-button>
+    </div>
+
     <!-- 设备情况 + 待办事项 顶部区域 -->
     <div class="top-section">
       <!-- 设备情况 -->
@@ -40,7 +53,7 @@
       <div class="map-container">
         <div ref="mapContainer" class="map-chart"></div>
         <div class="controls">
-          <el-button type="primary" @click="refreshMap">
+          <el-button type="primary" @click="refreshMap" :loading="loading">
             <i class="el-icon-refresh-right"></i> 刷新地图
           </el-button>
           <el-button type="success" @click="addRandomDevice">
@@ -78,7 +91,11 @@
       <!-- 在用设备排行 -->
       <div class="ranking-section">
         <h3>在用设备排行（单位：台）</h3>
-        <el-table :data="rankingData" border style="width: 100%" :show-header="false">
+        <div v-if="rankingData.length === 0" class="empty-data">
+          <i class="el-icon-data-analysis"></i>
+          <p>暂无排行数据</p>
+        </div>
+        <el-table v-else :data="rankingData" border style="width: 100%" :show-header="false">
           <el-table-column prop="name" label="设备类型" align="left" />
           <el-table-column label="数量" align="right">
             <template #default="scope">
@@ -98,71 +115,110 @@
   import { ref, onMounted, onUnmounted } from 'vue'
   import AMapLoader from "@amap/amap-jsapi-loader";
   import axios from 'axios'
-  import { queryDeviceCountByStatus } from '@/api/system/equipment';
+  import { queryDeviceCountByStatus, getDashboardStats } from '@/api/system/equipment';
 
+  // 数据加载状态
+  const loading = ref(false)
+  const error = ref('')
+
+  // 设备统计数据
   const deviceStats = ref({
-    total: 10,
-    inUse: 4,
-    idle: 5,
-    stopped: 1,
-    status: "1",
-  })
-
-  const fetchDeviceStats = async () => {
-    try {
-      const res = await queryDeviceCountByStatus(deviceStats.value);
-      deviceStats.value = res.data;
-    } catch (error) {
-      console.error('获取设备统计数出错', error)
-    }
-  };
-
-  onMounted(() => {
-    fetchDeviceStats()
+    total: 0,
+    inUse: 0,
+    idle: 0,
+    stopped: 0,
   })
 
   // 激活情况数据
   const activationStats = ref({
-    activated: 5,
-    unactivated: 7
+    activated: 0,
+    unactivated: 0
   })
+
   // 运行状态数据
   const runningStats = ref({
-    normal: 5,
-    fault: 3
+    normal: 0,
+    fault: 0
   })
+
   // 待办事项数据
   const todoItems = ref({
-    activate: 3,
-    install: 1,
-    model: 2,
-    location: 5
+    activate: 0,
+    install: 0,
+    model: 0,
+    location: 0
   })
-  // 在用设备排行数据
-  const rankingData = ref([
-    { name: '光刻机', count: 5 },
-    { name: '刻蚀机', count: 0 },
-    { name: '薄膜沉积设备', count: 3 },
-    { name: '离子注入机', count: 1 },
-    { name: '机械抛光', count: 5 },
-    { name: '清洗机', count: 6 },
-    { name: '氧化炉', count: 1 },
-    { name: '晶圆切割机', count: 3 },
-    { name: '晶元键合机', count: 7 },
-    { name: '测试机', count: 8 }
-  ])
 
-  // 地图相关
-  const mapContainer = ref(null)
-  let map = null
-  let markers = []
-  const errorMessage = ref('')
-  const searchKeyword = ref('')
+  // 在用设备排行数据
+  const rankingData = ref([])
+
+  // 地图设备数据
   const deviceList = ref([])
 
-  // 模拟设备数据（实际应从后端获取）
-  const generateRandomDevices = (count = 10) => {
-    const devices = []
+  // 获取仪表盘数据
+  const fetchDashboardData = async () => {
+    loading.value = true
+    error.value = ''
+    
+    try {
+      const res = await getDashboardStats()
+      if (res.code === 0 && res.data) {
+        const data = res.data
+        
+        // 更新设备统计数据
+        if (data.deviceStats) {
+          deviceStats.value = data.deviceStats
+        }
+        
+        // 更新激活情况数据
+        if (data.activationStats) {
+          activationStats.value = data.activationStats
+        }
+        
+        // 更新运行状态数据
+        if (data.runningStats) {
+          runningStats.value = data.runningStats
+        }
+        
+        // 更新待办事项数据
+        if (data.todoItems) {
+          todoItems.value = data.todoItems
+        }
+        
+        // 更新排行数据
+        if (data.rankingData) {
+          rankingData.value = data.rankingData
+        }
+        
+        // 更新地图数据
+        if (data.mapData) {
+          deviceList.value = data.mapData.map(device => ({
+            id: device.id,
+            name: device.name || '未知设备',
+            type: device.type || '未知类型',
+            status: device.status || '未知',
+            lng: device.longitude,
+            lat: device.latitude,
+            temperature: Math.floor(Math.random() * 40) + 20,
+            load: Math.floor(Math.random() * 100)
+          }))
+        }
+      }
+    } catch (err) {
+      console.error('获取仪表盘数据失败', err)
+      error.value = '获取数据失败，请稍后重试'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 根据位置信息获取经度（这里需要根据实际的位置格式来解析）
+  const getLocationLng = (location) => {
+    if (!location) return 116.397428 // 默认北京经度
+    
+    // 这里可以根据实际的位置格式来解析经纬度
+    // 例如：如果location是"北京市朝阳区"，可以通过地理编码服务获取经纬度
+    // 暂时使用模拟数据
     const cities = [
       { name: '北京', lng: 116.407526, lat: 39.90403 },
       { name: '上海', lng: 121.473701, lat: 31.230416 },
@@ -175,40 +231,71 @@
       { name: '重庆', lng: 106.504959, lat: 29.533155 },
       { name: '西安', lng: 108.948021, lat: 34.263161 }
     ]
-
-    for (let i = 0; i < count; i++) {
-      const city = cities[Math.floor(Math.random() * cities.length)]
-      const lngOffset = (Math.random() - 0.5) * 2
-      const latOffset = (Math.random() - 0.5) * 2
-
-      devices.push({
-        id: `device-${Date.now()}-${i}`,
-        name: `设备${i + 1}`,
-        type: ['服务器', '传感器', '摄像头', '路由器'][Math.floor(Math.random() * 4)],
-        status: ['在线', '离线', '故障'][Math.floor(Math.random() * 3)],
-        lng: city.lng + lngOffset,
-        lat: city.lat + latOffset,
-        temperature: Math.floor(Math.random() * 40) + 20,
-        load: Math.floor(Math.random() * 100)
-      })
+    
+    // 简单的城市匹配逻辑
+    for (const city of cities) {
+      if (location.includes(city.name)) {
+        return city.lng + (Math.random() - 0.5) * 2 // 添加一些随机偏移
+      }
     }
-    return devices
+    
+    // 如果没有匹配到城市，返回随机位置
+    const randomCity = cities[Math.floor(Math.random() * cities.length)]
+    return randomCity.lng + (Math.random() - 0.5) * 2
   }
+
+  // 根据位置信息获取纬度
+  const getLocationLat = (location) => {
+    if (!location) return 39.90923 // 默认北京纬度
+    
+    const cities = [
+      { name: '北京', lng: 116.407526, lat: 39.90403 },
+      { name: '上海', lng: 121.473701, lat: 31.230416 },
+      { name: '广州', lng: 113.264435, lat: 23.12911 },
+      { name: '深圳', lng: 114.057868, lat: 22.543099 },
+      { name: '成都', lng: 104.065735, lat: 30.572269 },
+      { name: '杭州', lng: 120.15358, lat: 30.287458 },
+      { name: '南京', lng: 118.767413, lat: 32.041544 },
+      { name: '武汉', lng: 114.298572, lat: 30.584355 },
+      { name: '重庆', lng: 106.504959, lat: 29.533155 },
+      { name: '西安', lng: 108.948021, lat: 34.263161 }
+    ]
+    
+    for (const city of cities) {
+      if (location.includes(city.name)) {
+        return city.lat + (Math.random() - 0.5) * 2
+      }
+    }
+    
+    const randomCity = cities[Math.floor(Math.random() * cities.length)]
+    return randomCity.lat + (Math.random() - 0.5) * 2
+  }
+
+  // 地图相关
+  const mapContainer = ref(null)
+  let map = null
+  let markers = []
+  const errorMessage = ref('')
+  const searchKeyword = ref('')
+
   onMounted(async () => {
+    // 首先获取仪表盘数据
+    await fetchDashboardData()
+    
+    // 然后初始化地图
     try {
       const AMap = await AMapLoader.load({
-        key: "bcef5eb6dccedfc3c36e02df5c167ab2", // 申请好的Web端开发者Key，首次调用 load 时必填
-        version: "2.0", // 指定要加载的 JSAPI 的版本，缺省时默认为 1.4.15
-        plugins: [], // 需要使用的的插件列表，如比例尺'AMap.Scale'等
+        key: "bcef5eb6dccedfc3c36e02df5c167ab2",
+        version: "2.0",
+        plugins: [],
       });
 
       map = new AMap.Map(mapContainer.value, {
-        viewMode: "3D", // 是否为3D地图模式
-        zoom: 11, // 初始化地图级别
-        center: [116.397428, 39.90923], // 初始化地图中心点位置
+        viewMode: "3D",
+        zoom: 11,
+        center: [116.397428, 39.90923],
       });
 
-      deviceList.value = generateRandomDevices(15)
       renderMap()
     } catch (e) {
       console.log(e);
@@ -221,6 +308,8 @@
   })
 
   const renderMap = () => {
+    if (!map) return
+    
     // 清除之前的标记
     if (markers.length > 0) {
       map.remove(markers);
@@ -228,30 +317,32 @@
     }
 
     deviceList.value.forEach(device => {
-      const marker = new AMap.Marker({
-        position: [device.lng, device.lat],
-        icon: getDeviceIcon(device.status),
-        offset: new AMap.Pixel(-10, -10),
-      });
+      if (device.lng && device.lat) {
+        const marker = new AMap.Marker({
+          position: [device.lng, device.lat],
+          icon: getDeviceIcon(device.status),
+          offset: new AMap.Pixel(-10, -10),
+        });
 
-      const infoWindow = new AMap.InfoWindow({
-        content: `
-        <div style="font-weight:bold; color:#36CFFB">${device.name}</div>
-        <div style="color:#94A3B8">类型: ${device.type}</div>
-        <div style="color:#94A3B8">状态: <span style="color:${getDeviceColor(device.status)}">${getStatusText(device.status)}</span></div>
-        <div style="color:#94A3B8">位置: ${device.lng.toFixed(2)}, ${device.lat.toFixed(2)}</div>
-        <div style="color:#94A3B8">温度: ${device.temperature}°C</div>
-        <div style="color:#94A3B8">负载: ${device.load}%</div>
-      `,
-        offset: new AMap.Pixel(0, -30)
-      });
+        const infoWindow = new AMap.InfoWindow({
+          content: `
+          <div style="font-weight:bold; color:#36CFFB">${device.name}</div>
+          <div style="color:#94A3B8">类型: ${device.type}</div>
+          <div style="color:#94A3B8">状态: <span style="color:${getDeviceColor(device.status)}">${device.status}</span></div>
+          <div style="color:#94A3B8">位置: ${device.lng.toFixed(2)}, ${device.lat.toFixed(2)}</div>
+          <div style="color:#94A3B8">温度: ${device.temperature}°C</div>
+          <div style="color:#94A3B8">负载: ${device.load}%</div>
+        `,
+          offset: new AMap.Pixel(0, -30)
+        });
 
-      marker.on('click', () => {
-        infoWindow.open(map, marker.getPosition());
-      });
+        marker.on('click', () => {
+          infoWindow.open(map, marker.getPosition());
+        });
 
-      marker.setMap(map);
-      markers.push(marker);
+        marker.setMap(map);
+        markers.push(marker);
+      }
     });
   }
 
@@ -273,24 +364,14 @@
     });
   }
 
-  const getStatusText = (status) => {
-    const statusMap = {
-      online: '在线',
-      offline: '离线',
-      fault: '故障'
-    }
-    return statusMap[status] || status
-  }
-
-  const refreshMap = () => {
-    deviceList.value = generateRandomDevices(15)
+  const refreshMap = async () => {
+    await fetchDashboardData()
     renderMap()
   }
 
   const addRandomDevice = () => {
-    const newDevice = generateRandomDevices(1)[0]
-    deviceList.value = [...deviceList.value, newDevice]
-    renderMap()
+    // 这里可以调用创建设备的API
+    console.log('添加设备功能需要实现')
   }
 
   const filterDevices = () => {
@@ -305,8 +386,35 @@
       device.type.toLowerCase().includes(keyword)
     )
 
+    // 临时过滤显示
+    const originalList = [...deviceList.value]
     deviceList.value = filtered
     renderMap()
+    
+    // 恢复原始列表
+    setTimeout(() => {
+      deviceList.value = originalList
+    }, 3000)
+  }
+
+  async function getLngLatByAddress(address) {
+    return new Promise((resolve, reject) => {
+      AMapLoader.load({
+        key: 'bcef5eb6dccedfc3c36e02df5c167ab2',
+        version: '2.0',
+        plugins: ['AMap.Geocoder']
+      }).then(AMap => {
+        const geocoder = new AMap.Geocoder()
+        geocoder.getLocation(address, (status, result) => {
+          if (status === 'complete' && result.geocodes.length) {
+            const { location } = result.geocodes[0]
+            resolve({ lng: location.lng, lat: location.lat })
+          } else {
+            reject('地址解析失败')
+          }
+        })
+      })
+    })
   }
 </script>
 
@@ -316,6 +424,78 @@
     padding: 20px;
     background-color: #fff;
     font-family: Avenir, Helvetica, Arial, sans-serif;
+    position: relative;
+  }
+
+  /* 加载状态覆盖层 */
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+  }
+
+  .loading-overlay p {
+    margin-top: 16px;
+    color: #606266;
+    font-size: 14px;
+  }
+
+  /* 错误提示横幅 */
+  .error-banner {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    animation: slideInDown 0.3s ease;
+  }
+
+  .error-banner i {
+    font-size: 18px;
+  }
+
+  .error-banner .el-button {
+    color: white;
+    margin-left: auto;
+  }
+
+  .error-banner .el-button:hover {
+    color: #f0f0f0;
+  }
+
+  /* 空数据状态 */
+  .empty-data {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #909399;
+    text-align: center;
+  }
+
+  .empty-data i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  .empty-data p {
+    margin: 0;
+    font-size: 14px;
   }
 
   /* 顶部区域布局 */
@@ -600,6 +780,17 @@
     to {
       opacity: 1;
       transform: translate(-50%, 0);
+    }
+  }
+
+  @keyframes slideInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 

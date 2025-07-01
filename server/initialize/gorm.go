@@ -56,6 +56,7 @@ func RegisterTables() {
 		system.Condition{},
 		system.JoinTemplate{},
 		system.SysParams{},
+		system.Equipment{}, // 添加设备表
 
 		example.ExaFile{},
 		example.ExaCustomer{},
@@ -74,5 +75,9 @@ func RegisterTables() {
 		global.GVA_LOG.Error("register biz_table failed", zap.Error(err))
 		os.Exit(0)
 	}
+
+	// 初始化设备数据
+	system.InitEquipment()
+
 	global.GVA_LOG.Info("register table success")
 }

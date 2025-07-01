@@ -395,3 +395,24 @@ func (EQApi *EquipmentApi) QueryDeviceCountByStatus(c *gin.Context) {
 	}
 	response.OkWithData(total, c)
 }
+
+// Dashboard 获取仪表盘统计数据
+// @Tags Equipment
+// @Summary 获取仪表盘统计数据
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
+// @Router /EQ/Dashboard [GET]
+func (EQApi *EquipmentApi) Dashboard(c *gin.Context) {
+	// 创建业务用Context
+	ctx := c.Request.Context()
+
+	stats, err := EQService.GetDashboardStats(ctx)
+	if err != nil {
+		global.GVA_LOG.Error("获取仪表盘统计数据失败!", zap.Error(err))
+		response.FailWithMessage("获取仪表盘统计数据失败", c)
+		return
+	}
+
+	response.OkWithData(stats, c)
+}

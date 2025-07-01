@@ -2,6 +2,7 @@ package system
 
 import (
 	"context"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/system"
 	systemReq "github.com/flipped-aurora/gin-vue-admin/server/model/system/request"
@@ -114,4 +115,195 @@ func (EQService *EquipmentService) QueryDeviceCountByStatus(ctx context.Context,
 	var total int64
 	err := global.GVA_DB.Model(&system.Equipment{}).Where("operational_status = ?", status).Count(&total).Error
 	return total, err
+}
+
+// GetDashboardStats 获取仪表盘统计数据
+func (EQService *EquipmentService) GetDashboardStats(ctx context.Context) (map[string]interface{}, error) {
+	stats := make(map[string]interface{})
+
+	// 1. 设备状态统计
+	var total, inUse, idle, stopped int64
+
+	// 总设备数
+	err := global.GVA_DB.Model(&system.Equipment{}).Count(&total).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 在用设备数 (operational_status = "1")
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("operational_status = ?", "1").Count(&inUse).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 闲置设备数 (operational_status = "2")
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("operational_status = ?", "2").Count(&idle).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 停用设备数 (operational_status = "3")
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("operational_status = ?", "3").Count(&stopped).Error
+	if err != nil {
+		return nil, err
+	}
+
+	stats["deviceStats"] = map[string]int64{
+		"total":   total,
+		"inUse":   inUse,
+		"idle":    idle,
+		"stopped": stopped,
+	}
+
+	// 2. 激活情况统计（在用设备中）
+	var activated, unactivated int64
+
+	// 已激活设备数 (sctive_state = "1" 且 operational_status = "1")
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("sctive_state = ? AND operational_status = ?", "1", "1").Count(&activated).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 未激活设备数 (sctive_state = "2" 且 operational_status = "1")
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("sctive_state = ? AND operational_status = ?", "2", "1").Count(&unactivated).Error
+	if err != nil {
+		return nil, err
+	}
+
+	stats["activationStats"] = map[string]int64{
+		"activated":   activated,
+		"unactivated": unactivated,
+	}
+
+	// 3. 运行状态统计（已激活设备中）
+	var normal, fault int64
+
+	// 正常设备数 (nunning_state = "1" 且 sctive_state = "1")
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("nunning_state = ? AND sctive_state = ?", "1", "1").Count(&normal).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 故障设备数 (nunning_state = "2" 且 sctive_state = "1")
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("nunning_state = ? AND sctive_state = ?", "2", "1").Count(&fault).Error
+	if err != nil {
+		return nil, err
+	}
+
+	stats["runningStats"] = map[string]int64{
+		"normal": normal,
+		"fault":  fault,
+	}
+
+	// 4. 待办事项统计
+	var todoActivate, todoInstall, todoModel, todoLocation int64
+
+	// 待激活设备数 (sctive_state = "2")
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("sctive_state = ?", "2").Count(&todoActivate).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 待安装设备数 (location为空或null)
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("location IS NULL OR location = ''").Count(&todoInstall).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 型号补充 (equipment_name为空或null)
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("equipment_name IS NULL OR equipment_name = ''").Count(&todoModel).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 安装地点补充 (location为空或null)
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("location IS NULL OR location = ''").Count(&todoLocation).Error
+	if err != nil {
+		return nil, err
+	}
+
+	stats["todoItems"] = map[string]int64{
+		"activate": todoActivate,
+		"install":  todoInstall,
+		"model":    todoModel,
+		"location": todoLocation,
+	}
+
+	// 5. 设备类型排行统计
+	var equipmentTypes []struct {
+		EquipmentName string `json:"equipmentName"`
+		Count         int64  `json:"count"`
+	}
+
+	err = global.GVA_DB.Model(&system.Equipment{}).
+		Select("equipment_name, COUNT(*) as count").
+		Where("operational_status = ?", "1").
+		Group("equipment_name").
+		Order("count DESC").
+		Limit(10).
+		Scan(&equipmentTypes).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 转换为前端需要的格式
+	var rankingData []map[string]interface{}
+	for _, et := range equipmentTypes {
+		rankingData = append(rankingData, map[string]interface{}{
+			"name":  et.EquipmentName,
+			"count": et.Count,
+		})
+	}
+
+	stats["rankingData"] = rankingData
+
+	// 6. 地图设备数据
+	var mapDevices []system.Equipment
+	err = global.GVA_DB.Model(&system.Equipment{}).
+		Select("id, equipment_name, equipment_number, location, operational_status, nunning_state, sctive_state, online").
+		Where("location IS NOT NULL AND location != ''").
+		Find(&mapDevices).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 转换为地图需要的格式
+	var mapData []map[string]interface{}
+	for _, device := range mapDevices {
+		// 这里需要根据location解析经纬度，暂时使用模拟数据
+		// 实际项目中可能需要添加经纬度字段或使用地理编码服务
+		mapData = append(mapData, map[string]interface{}{
+			"id":       device.ID,
+			"name":     device.EquipmentName,
+			"type":     device.EquipmentNumber,
+			"status":   getStatusText(device.OperationalStatus, device.NunningState),
+			"location": device.Location,
+			"online":   device.Online,
+		})
+	}
+
+	stats["mapData"] = mapData
+
+	return stats, nil
+}
+
+// getStatusText 获取状态文本
+func getStatusText(operationalStatus, runningState *string) string {
+	if operationalStatus == nil {
+		return "未知"
+	}
+
+	switch *operationalStatus {
+	case "1":
+		if runningState != nil && *runningState == "2" {
+			return "故障"
+		}
+		return "在线"
+	case "2":
+		return "离线"
+	case "3":
+		return "停用"
+	default:
+		return "未知"
+	}
 }

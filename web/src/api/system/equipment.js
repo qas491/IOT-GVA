@@ -146,3 +146,17 @@ export const queryDeviceCountByStatus  = (params) => {
     params
   })
 }
+
+// Dashboard 获取仪表盘统计数据
+// @Tags Equipment
+// @Summary 获取仪表盘统计数据
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} response.Response{data=object,msg=string} "获取成功"
+// @Router /EQ/Dashboard [GET]
+export const getDashboardStats = () => {
+  return service({
+    url: '/EQ/Dashboard',
+    method: 'GET'
+  })
+}
