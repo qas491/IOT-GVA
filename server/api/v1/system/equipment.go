@@ -1,7 +1,12 @@
 package system
 
 import (
+	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
@@ -9,25 +14,22 @@ import (
 	systemReq "github.com/flipped-aurora/gin-vue-admin/server/model/system/request"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type EquipmentApi struct{}
 
 // 定义 MQTT 消息处理函数
 var mqttHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	// 解析消息，假设消息格式为 "设备ID:运营状态"
 	message := string(msg.Payload())
 	parts := strings.Split(message, ":")
-	if len(parts) != 2 {
+	if len(parts) < 2 {
 		global.GVA_LOG.Error("MQTT 消息格式错误", zap.String("message", message))
 		return
 	}
 
 	deviceID := parts[0]
 	statusStr := parts[1]
+	isLWT := len(parts) > 2 && parts[2] == "LWT"
 
 	// 将状态字符串转换为整数
 	status, err := strconv.Atoi(statusStr)
@@ -44,15 +46,63 @@ var mqttHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message)
 		return
 	}
 
-	// 更新运营状态
+	// 更新运营状态、心跳时间、在线状态
 	EQ.OperationalStatus = &statusStr
+	currentTime := time.Now().Unix()
+	EQ.LastSeen = &currentTime
+	online := true
+	EQ.Online = &online
 	err = global.GVA_DB.Save(&EQ).Error
 	if err != nil {
 		global.GVA_LOG.Error("更新设备运营状态失败", zap.String("deviceID", deviceID), zap.Error(err))
 		return
 	}
 
-	global.GVA_LOG.Info("设备运营状态更新成功", zap.String("deviceID", deviceID), zap.Int("status", status))
+	global.GVA_LOG.Info("设备运营状态和心跳时间更新成功", zap.String("deviceID", deviceID), zap.Int("status", status))
+
+	if isLWT {
+		global.GVA_LOG.Warn("收到LWT遗嘱消息，设备异常断开", zap.String("deviceID", deviceID))
+	}
+}
+
+// 新增：定时任务，定期检查设备心跳，超时未收到心跳则自动断开
+func StartEquipmentHeartbeatChecker(ctx context.Context, timeoutSeconds int64, checkInterval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(checkInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				var equipments []system.Equipment
+				err := global.GVA_DB.Find(&equipments).Error
+				if err != nil {
+					global.GVA_LOG.Error("定时检查设备心跳失败", zap.Error(err))
+					continue
+				}
+				now := time.Now().Unix()
+				for _, eq := range equipments {
+					if eq.LastSeen == nil || eq.Online == nil || *eq.Online == false {
+						continue
+					}
+					if now-(*eq.LastSeen) > timeoutSeconds {
+						offline := false
+						operationalStatus := "2" // 2=断开/故障
+						err := global.GVA_DB.Model(&system.Equipment{}).Where("id = ?", eq.ID).Updates(map[string]interface{}{
+							"online":             offline,
+							"operational_status": operationalStatus,
+						}).Error
+						if err != nil {
+							global.GVA_LOG.Error("自动断开设备失败", zap.Uint("deviceID", eq.ID), zap.Error(err))
+						} else {
+							global.GVA_LOG.Info("设备超时自动断开", zap.Uint("deviceID", eq.ID))
+						}
+					}
+				}
+			}
+		}
+	}()
 }
 
 // 初始化 MQTT 客户端
@@ -75,6 +125,9 @@ func initMQTT() {
 	}
 
 	global.GVA_MQTT_CLIENT = client // 假设在 global 包中定义了 GVA_MQTT_CLIENT 变量
+	// 启动心跳检查定时任务
+	ctx := context.Background()
+	StartEquipmentHeartbeatChecker(ctx, 300, 60*time.Second) // 5分钟无心跳判定为断开，每60秒检查一次
 }
 
 // CreateEquipment 创建设备信息

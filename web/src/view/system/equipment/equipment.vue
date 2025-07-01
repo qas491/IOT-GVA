@@ -161,7 +161,12 @@
           <el-input v-model="formData.equipmentName" :clearable="false" placeholder="请输入设备名称" />
         </el-form-item>
         <el-form-item label="所在位置:" prop="location">
-          <el-input v-model="formData.location" :clearable="false" placeholder="请输入所在位置" />
+          <AreaSelector
+            v-model="area"
+            :props="areaSelectProps"
+            @change="handleAreaChange"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="运营状态:" prop="operationalStatus">
           <el-select v-model="formData.operationalStatus" placeholder="请选择运营状态" style="width:100%" filterable :clearable="false">
@@ -251,6 +256,9 @@
   // 导出模板组件
   import ExportTemplate from '@/components/exportExcel/exportTemplate.vue'
 
+  import { AreaSelector } from '@luohc92/vue3-area-selector'
+  import '@luohc92/vue3-area-selector/dist/style.css'
+
   defineOptions({
     name: 'Equipment'
   })
@@ -279,6 +287,39 @@
     softwareVersion: '',
     afterSalesPersonnel: '',
   })
+
+  const area = ref({})
+  const areaSelectProps = reactive({
+    level: 0, // 0=不限制，最大支持到村
+    showAllLevels: true,
+    clearable: true,
+    placeholder: '请选择省/市/区/镇/村',
+  })
+
+  function handleAreaChange(val) {
+    // val为AreaSelectorResultDto，包含province/city/district/town/village等
+    // 组装完整地址
+    const arr = []
+    if (val.province) arr.push(val.province)
+    if (val.city) arr.push(val.city)
+    if (val.district) arr.push(val.district)
+    if (val.town) arr.push(val.town)
+    if (val.village) arr.push(val.village)
+    formData.value.location = arr.join('/')
+  }
+
+  function setAreaValueByLocation(location) {
+    // location为"省/市/区/镇/村"格式
+    if (!location) return
+    const arr = location.split('/')
+    area.value = {
+      province: arr[0] || '',
+      city: arr[1] || '',
+      district: arr[2] || '',
+      town: arr[3] || '',
+      village: arr[4] || '',
+    }
+  }
 
   // 状态类映射配置（使用数值作为键）
   const statusClassMap = {
@@ -499,6 +540,7 @@
     type.value = 'update'
     if (res.code === 0) {
       formData.value = res.data
+      setAreaValueByLocation(res.data.location)
       dialogFormVisible.value = true
     }
   }
@@ -525,6 +567,7 @@
   const openDialog = () => {
     type.value = 'create'
     dialogFormVisible.value = true
+    area.value = {}
   }
 
   // 关闭弹窗
@@ -540,6 +583,7 @@
       softwareVersion: '',
       afterSalesPersonnel: '',
     }
+    area.value = {}
   }
 
   // 弹窗确定
