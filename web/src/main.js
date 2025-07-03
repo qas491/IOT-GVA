@@ -13,9 +13,11 @@ import run from '@/core/gin-vue-admin.js'
 import auth from '@/directive/auth'
 import { store } from '@/pinia'
 import App from './App.vue'
+import { connectAnnounceWS } from './utils/ws'
 
 const app = createApp(App)
 app.config.productionTip = false
 
 app.use(run).use(ElementPlus).use(store).use(auth).use(router).mount('#app')
+connectAnnounceWS()
 export default app

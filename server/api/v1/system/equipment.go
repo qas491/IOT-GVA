@@ -21,47 +21,68 @@ type EquipmentApi struct{}
 // 定义 MQTT 消息处理函数
 var mqttHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	message := string(msg.Payload())
+	global.GVA_LOG.Info("收到MQTT消息", zap.String("payload", message))
 	parts := strings.Split(message, ":")
 	if len(parts) < 2 {
 		global.GVA_LOG.Error("MQTT 消息格式错误", zap.String("message", message))
 		return
 	}
 
-	deviceID := parts[0]
+	// 设备ID为整型
+	deviceIDStr := parts[0]
 	statusStr := parts[1]
 	isLWT := len(parts) > 2 && parts[2] == "LWT"
 
-	// 将状态字符串转换为整数
-	status, err := strconv.Atoi(statusStr)
+	// 设备ID转为整型
+	deviceID, err := strconv.ParseUint(deviceIDStr, 10, 64)
 	if err != nil {
-		global.GVA_LOG.Error("运营状态转换错误", zap.String("statusStr", statusStr), zap.Error(err))
+		global.GVA_LOG.Error("设备ID转换错误", zap.String("deviceID", deviceIDStr), zap.Error(err))
 		return
 	}
 
-	// 根据状态值更新设备的运营状态
+	// 校验状态码
+	if statusStr != "1" && statusStr != "2" && statusStr != "3" {
+		global.GVA_LOG.Error("运营状态非法", zap.String("statusStr", statusStr))
+		return
+	}
+
+	// 查询设备
 	var EQ system.Equipment
 	err = global.GVA_DB.Where("id = ?", deviceID).First(&EQ).Error
 	if err != nil {
-		global.GVA_LOG.Error("查询设备信息失败", zap.String("deviceID", deviceID), zap.Error(err))
+		global.GVA_LOG.Error("查询设备信息失败", zap.Uint("deviceID", uint(deviceID)), zap.Error(err))
 		return
 	}
 
 	// 更新运营状态、心跳时间、在线状态
-	EQ.OperationalStatus = &statusStr
 	currentTime := time.Now().Unix()
-	EQ.LastSeen = &currentTime
 	online := true
-	EQ.Online = &online
-	err = global.GVA_DB.Save(&EQ).Error
+
+	err = global.GVA_DB.Model(&system.Equipment{}).Where("id = ?", deviceID).Updates(map[string]interface{}{
+		"operational_status": statusStr,
+		"last_seen":          currentTime,
+		"online":             online,
+	}).Error
 	if err != nil {
-		global.GVA_LOG.Error("更新设备运营状态失败", zap.String("deviceID", deviceID), zap.Error(err))
+		global.GVA_LOG.Error("更新设备运营状态失败", zap.Uint("deviceID", uint(deviceID)), zap.Error(err))
 		return
 	}
 
-	global.GVA_LOG.Info("设备运营状态和心跳时间更新成功", zap.String("deviceID", deviceID), zap.Int("status", status))
+	global.GVA_LOG.Info("设备运营状态和心跳时间更新成功", zap.Uint("deviceID", uint(deviceID)), zap.String("status", statusStr))
 
+	// LWT处理（如需特殊处理断开）
 	if isLWT {
-		global.GVA_LOG.Warn("收到LWT遗嘱消息，设备异常断开", zap.String("deviceID", deviceID))
+		offline := false
+		lwtStatus := "2" // 断开时可设为"2"（闲置）或自定义
+		err := global.GVA_DB.Model(&system.Equipment{}).Where("id = ?", deviceID).Updates(map[string]interface{}{
+			"online":             offline,
+			"operational_status": lwtStatus,
+		}).Error
+		if err != nil {
+			global.GVA_LOG.Error("LWT自动断开设备失败", zap.Uint("deviceID", uint(deviceID)), zap.Error(err))
+		} else {
+			global.GVA_LOG.Info("LWT设备超时自动断开", zap.Uint("deviceID", uint(deviceID)))
+		}
 	}
 }
 
@@ -106,7 +127,7 @@ func StartEquipmentHeartbeatChecker(ctx context.Context, timeoutSeconds int64, c
 }
 
 // 初始化 MQTT 客户端
-func initMQTT() {
+func InitMQTT() {
 	// 配置 MQTT 客户端
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker("tcp://14.103.149.204:1883") // 替换为实际的 MQTT 代理地址
@@ -140,9 +161,6 @@ func initMQTT() {
 // @Success 200 {object} response.Response{msg=string} "创建成功"
 // @Router /EQ/createEquipment [post]
 func (EQApi *EquipmentApi) CreateEquipment(c *gin.Context) {
-	// 初始化 MQTT 客户端
-	initMQTT()
-
 	// 创建业务用Context
 	ctx := c.Request.Context()
 
@@ -187,7 +205,7 @@ func (EQApi *EquipmentApi) UpdateEquipmentStatus(c *gin.Context) {
 
 	// 确保 MQTT 客户端已初始化
 	if global.GVA_MQTT_CLIENT == nil {
-		initMQTT()
+		InitMQTT()
 		time.Sleep(2 * time.Second) // 等待连接和订阅完成
 	}
 

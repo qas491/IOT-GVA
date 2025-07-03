@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/flipped-aurora/gin-vue-admin/server/api/v1/system"
 	"github.com/flipped-aurora/gin-vue-admin/server/core"
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/initialize"
@@ -31,7 +32,9 @@ func main() {
 	// 初始化系统
 	initializeSystem()
 	// 运行服务器
+	system.InitMQTT()
 	core.RunServer()
+
 }
 
 // initializeSystem 初始化系统所有组件

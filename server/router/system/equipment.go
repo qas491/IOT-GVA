@@ -17,6 +17,7 @@ func (s *EquipmentRouter) InitEquipmentRouter(Router *gin.RouterGroup, PublicRou
 		EQRouter.DELETE("deleteEquipment", EQApi.DeleteEquipment)
 		EQRouter.DELETE("deleteEquipmentByIds", EQApi.DeleteEquipmentByIds)
 		EQRouter.PUT("updateEquipment", EQApi.UpdateEquipment)
+		EQRouter.POST("/announce/pushVersionUpdate", EQApi.PushVersionUpdateAPI)
 	}
 	{
 
@@ -29,5 +30,7 @@ func (s *EquipmentRouter) InitEquipmentRouter(Router *gin.RouterGroup, PublicRou
 		EQRouterWithoutAuth.GET("devicecount", EQApi.QueryDeviceCount)
 		EQRouterWithoutAuth.GET("queryDeviceCountByStatus", EQApi.QueryDeviceCountByStatus)
 		EQRouterWithoutAuth.GET("Dashboard", EQApi.Dashboard)
+		EQRouterWithoutAuth.GET("/ws/announce", EQApi.WebSocketAnnounce)
 	}
+
 }

@@ -77,7 +77,7 @@ func RegisterTables() {
 	}
 
 	// 初始化设备数据
-	system.InitEquipment()
+	//system.InitEquipment()
 
 	global.GVA_LOG.Info("register table success")
 }
