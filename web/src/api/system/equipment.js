@@ -160,3 +160,12 @@ export const getDashboardStats = () => {
     method: 'GET'
   })
 }
+
+// 批量激活设备
+export const activateEquipment = (data) => {
+  return service({
+    url: '/EQ/activate',
+    method: 'post',
+    data
+  })
+}

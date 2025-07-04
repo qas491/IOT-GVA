@@ -434,3 +434,70 @@ func (EQApi *EquipmentApi) Dashboard(c *gin.Context) {
 
 	response.OkWithData(stats, c)
 }
+
+// ActivateEquipment 批量激活设备
+// @Tags Equipment
+// @Summary 批量激活设备
+// @Security ApiKeyAuth
+// @Accept application/json
+// @Produce application/json
+// @Param data body struct{IDs []uint `json:"IDs"`} true "设备ID列表"
+// @Success 200 {object} response.Response{msg=string} "激活成功"
+// @Router /equipment/activate [post]
+func (EQApi *EquipmentApi) ActivateEquipment(c *gin.Context) {
+	var req struct {
+		IDs []uint `json:"IDs"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.FailWithMessage("参数错误", c)
+		return
+	}
+	if len(req.IDs) == 0 {
+		response.FailWithMessage("请选择要激活的设备", c)
+		return
+	}
+
+	// 假设"已激活"状态值为'1'
+	alreadyActivated := make([]uint, 0)
+	toActivate := make([]uint, 0)
+
+	for _, id := range req.IDs {
+		var eq system.Equipment
+		err := global.GVA_DB.Where("id = ?", id).First(&eq).Error
+		if err != nil {
+			global.GVA_LOG.Error("查询设备信息失败", zap.Uint("deviceID", id), zap.Error(err))
+			continue
+		}
+		if eq.SctiveState != nil && *eq.SctiveState == "1" {
+			alreadyActivated = append(alreadyActivated, id)
+		} else {
+			toActivate = append(toActivate, id)
+		}
+	}
+
+	if len(alreadyActivated) == len(req.IDs) {
+		response.FailWithMessage("所选设备均已激活，无需重复激活", c)
+		return
+	}
+
+	if len(toActivate) > 0 {
+		err := global.GVA_DB.Model(&system.Equipment{}).
+			Where("id IN ?", toActivate).
+			Updates(map[string]interface{}{"sctive_state": "1"}).Error
+		if err != nil {
+			global.GVA_LOG.Error("激活失败", zap.Error(err))
+			response.FailWithMessage("激活失败", c)
+			return
+		}
+		// 这里统一返回详细提示
+		if len(alreadyActivated) > 0 {
+			response.OkWithMessage(fmt.Sprintf("部分设备已激活（ID: %v），其余设备已激活成功", alreadyActivated), c)
+		} else {
+			response.OkWithMessage("激活成功", c)
+		}
+		return
+	}
+
+	// 如果没有需要激活的设备
+	response.OkWithMessage("所有设备已激活", c)
+}
